@@ -310,3 +310,97 @@ export function beatBreadcrumb(beatId: string): string[] {
   }
   return crumbs;
 }
+
+/**
+ * Re-number a beat's id to be the next child of a new parent.
+ *
+ *   renumberChild("1.2.4", "3", siblings) → "3.X" where X is the next
+ *   available 1-based child index under parent 3.
+ *
+ * The new index is the lowest positive integer N such that `${parent}.${N}`
+ * is not already used by any sibling. We start at 1 (the first available
+ * child slot under the new parent) and increment past any taken indices.
+ */
+export function renumberChild(
+  childId: string,
+  newParentId: string | null,
+  siblings: Beat[] = []
+): string {
+  // Find the next free 1-based index under newParentId
+  const usedIndices = new Set(
+    siblings
+      .filter((b) => parentBeatId(b.id) === newParentId)
+      .map((b) => parseInt(b.id.split(".").pop() ?? "0", 10))
+      .filter((n) => !isNaN(n))
+  );
+  // Start at 1, find the lowest unused
+  let newIdx = 1;
+  while (usedIndices.has(newIdx)) {
+    newIdx++;
+  }
+  if (newParentId === null) {
+    return String(newIdx);
+  }
+  return `${newParentId}.${newIdx}`;
+}
+
+/**
+ * Re-number a beat and all its descendants when its parent changes.
+ * Returns a map: oldId → newId. Callers use this to rewrite the
+ * file content after a reparent.
+ *
+ * Example:
+ *   reparentBeat("1.2.4", "3", allBeats) → { "1.2.4": "3.1", "1.2.4.1": "3.1.1" }
+ */
+export function reparentBeat(
+  movedId: string,
+  newParentId: string | null,
+  allBeats: Beat[]
+): { idMap: Map<string, string>; moved: string } {
+  const idMap = new Map<string, string>();
+
+  // Compute new id for the moved beat
+  const siblings = allBeats.filter((b) => b.id !== movedId);
+  const newId = renumberChild(movedId, newParentId, siblings);
+  idMap.set(movedId, newId);
+
+  // Walk descendants: any beat whose id starts with movedId + "." needs
+  // its id rewritten with newId as the prefix.
+  const movedPrefix = movedId + ".";
+  const newPrefix = newId + ".";
+  for (const beat of allBeats) {
+    if (beat.id === movedId) continue;
+    if (beat.id.startsWith(movedPrefix)) {
+      const tail = beat.id.slice(movedPrefix.length);
+      idMap.set(beat.id, newPrefix + tail);
+    }
+  }
+
+  return { idMap, moved: newId };
+}
+
+/**
+ * Rewrite a markdown file's text by replacing old section-marker ids
+ * with new ones. Other content (titles, prose) is preserved. Uses the
+ * idMap from reparentBeat().
+ */
+export function applyIdMap(text: string, idMap: Map<string, string>): string {
+  if (idMap.size === 0) return text;
+  // We rebuild the marker for each old id. We do this by finding each
+  // marker in the text and, if its id is in the map, rewriting it.
+  const newText = text.replace(
+    /<!--\s*section:\s*([\s\S]+?)-->/g,
+    (full, body: string) => {
+      // body is the inside of the comment: "id [fields...]"
+      const m = body.match(/^\s*(\S+)(?:\s+([\s\S]*?))?\s*$/);
+      if (!m) return full;
+      const oldId = m[1]!;
+      const newId = idMap.get(oldId);
+      if (!newId) return full;
+      // Reconstruct: "section: NEW_ID" + existing fields
+      const fields = m[2] ? ` ${m[2]}` : "";
+      return `<!--section: ${newId}${fields}-->`;
+    }
+  );
+  return newText;
+}
