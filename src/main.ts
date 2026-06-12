@@ -7,6 +7,8 @@ import { DASHBOARD_VIEW_TYPE, DeckDashboardView } from "./view/deck-dashboard";
 import { CopyBlocksSettings, DEFAULT_SETTINGS } from "./types";
 import { CopyBlocksSettingTab } from "./settings";
 import { beatsToReadingView, beatsToStageView } from "./view/reading-view";
+import { sectionBadgeExtension } from "./editor/section-badges";
+import { beatReorderExtension } from "./editor/beat-reorder";
 
 export default class CopyBlocksPlugin extends Plugin {
   settings: CopyBlocksSettings = DEFAULT_SETTINGS;
@@ -17,6 +19,11 @@ export default class CopyBlocksPlugin extends Plugin {
     // Register views
     this.registerView(BEAT_VIEW_TYPE, (leaf) => new BeatView(leaf, this.settings));
     this.registerView(DASHBOARD_VIEW_TYPE, (leaf) => new DeckDashboardView(leaf, this.settings));
+
+    // Register editor extensions — these apply to all markdown editors.
+    // Section badges (color-coded status pills) + drag/keyboard reorder.
+    this.registerEditorExtension(sectionBadgeExtension(this.settings.statuses));
+    this.registerEditorExtension(beatReorderExtension());
 
     // Ribbon icons
     this.addRibbonIcon("layout-list", "Open in Copy Blocks", async () => {

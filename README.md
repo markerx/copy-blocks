@@ -13,6 +13,9 @@ An Obsidian plugin for copywriters working on multi-file promo decks (VSLs, sale
 - **Reading view / stage view export** — strip the markers, dump clean prose (or labeled stage blocks) to clipboard or a new note
 - **Quick-jump to next problem** — "next beat needing primary source" / "next gated beat" / "next constructed beat"
 - **Configurable status taxonomy** — defaults match the patterns from real promo copy, but you can add/remove/reorder/rename statuses
+- **Inline status badges in the editor** — section markers render as color-coded pills (no more scanning long `<!--section: ...-->` comments)
+- **Drag-to-reorder beats** — grab a badge, drop it on another beat, and the markdown updates instantly
+- **Keyboard reorder** — `Cmd-Shift-Up` / `Cmd-Shift-Down` swaps the beat containing the cursor with its neighbor
 
 ## Quick start
 
@@ -30,7 +33,7 @@ An Obsidian plugin for copywriters working on multi-file promo decks (VSLs, sale
 
 ## How to use
 
-### Mark up your copy
+### Marker grammar
 
 In any note with `type: promo-copy` in its frontmatter, add beat markers above each copy block:
 
@@ -50,7 +53,22 @@ The marker grammar:
 
 - `id` is required (anything: `1`, `1.2`, `2.3.1`, etc.)
 - All other fields are optional
+- Status values can contain hyphens (e.g. `draft-v2-footnoted`, `voice-locked`)
 - `sources` is a comma-separated list of wikilink-style refs
+
+### What you see in the editor
+
+When you add markers and reload the file, the raw `<!--section: ...-->` text gets replaced with a colored pill. For example:
+
+```markdown
+[4.1 DRAFT-V2-FOOTNOTED · ⚠]
+**KIMBERLY:** Despite the **Iran war**...
+
+[4.2 VOICE-LOCKED · ✓]
+**EREZ:** I'll name it.
+```
+
+The pill color matches the status taxonomy configured in settings. Hover the pill to see the full metadata (sources, verification, label) in a native Obsidian tooltip. Grab the pill to drag it onto another beat and reorder; or hit `Cmd-Shift-Up` / `Cmd-Shift-Down` while the cursor is inside a beat to swap it with its neighbor.
 
 ### Open in Copy Blocks
 
@@ -73,6 +91,15 @@ The marker grammar:
 | Copy stage view (with beat headers) to clipboard | Strip markers, copy with beat labels |
 | Create reading view as new note | Export clean prose to `<file> — Reading View.md` |
 | Create stage view as new note | Export stage blocks to `<file> — Stage View.md` |
+
+### Editor shortcuts (inside any `type: promo-copy` note)
+
+| Shortcut | What it does |
+|---|---|
+| `Cmd-Shift-Up` | Swap the beat containing the cursor with the one above it |
+| `Cmd-Shift-Down` | Swap the beat containing the cursor with the one below it |
+| Drag a section badge | Pick up a beat and drop it on another to reorder |
+| Hover a section badge | Show tooltip with status, sources, verification, label |
 
 ### Cross-file threading
 
@@ -123,9 +150,10 @@ Smoke tests (run against your real promo-copy files):
 ```bash
 npx esbuild scripts/smoke-test.ts --bundle --platform=node --target=es2020 --outfile=scripts/smoke-test.js && node scripts/smoke-test.js
 npx esbuild scripts/cross-file-test.ts --bundle --platform=node --target=es2020 --outfile=scripts/cross-file-test.js && node scripts/cross-file-test.js
+npx esbuild scripts/reorder-test.ts --bundle --platform=node --target=es2020 --outfile=scripts/reorder-test.js && node scripts/reorder-test.js
 ```
 
-The plugin is written in TypeScript, built with esbuild, and uses Obsidian's `ItemView` for the beat view + dashboard.
+The plugin is written in TypeScript, built with esbuild, and uses Obsidian's `ItemView` for the beat view + dashboard, and CodeMirror 6 `ViewPlugin` + `MatchDecorator` for the editor extensions.
 
 ### Verified against real data
 
@@ -155,13 +183,15 @@ Sample output from `01-Host-Monologue.md` and `04-Big-Idea-Reveal.md`:
 
 ## Roadmap
 
-- [ ] Drag-to-reorder beats in edit mode
-- [ ] Inline status badges in the CodeMirror editor (not just the view)
+- [x] ~~Drag-to-reorder beats in edit mode~~
+- [x] ~~Inline status badges in the CodeMirror editor~~
 - [ ] Full cross-deck dependency graph view (Surfacer-style)
 - [ ] Drift dashboard — list all stale claims across the deck
 - [ ] Re-verify command — re-fetch cited URLs and diff against beat text
 - [ ] Per-deck status history / audit log
 - [ ] Detect "REMOVED 2026-06-08" footnote patterns and surface as re-work history
+- [ ] Cross-file drag — drag a beat from one file's editor into another
+- [ ] Right-click context menu on badges (change status inline)
 
 ## License
 

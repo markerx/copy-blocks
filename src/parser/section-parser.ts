@@ -15,7 +15,7 @@ import { Beat, VerificationState } from "../types";
  */
 
 const MARKER_PATTERN =
-  /<!--\s*section:\s*([^\s>]+?)(?:\s+([^\-]+?))?\s*-->/g;
+  /<!--\s*section:\s*([^\s>]+?)\s*([^>]*?)\s*-->/g;
 
 const FIELD_PATTERN = /(\w+):(?:"([^"]*)"|'([^']*)'|(\S+))/g;
 
@@ -82,7 +82,7 @@ interface ParsedFields {
   [key: string]: string | string[] | undefined;
 }
 
-function parseFields(fieldString: string): ParsedFields {
+export function parseFields(fieldString: string): ParsedFields {
   const result: ParsedFields = {};
   if (!fieldString.trim()) return result;
 

@@ -132,6 +132,170 @@
   vertical-align: middle;
 }
 
+/* Inline badges in the CodeMirror editor — replace the raw <!--section: ...--> text */
+
+.cb-inline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-monospace);
+  font-size: 0.75em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin: 0 4px;
+  border: 1px solid currentColor;
+  vertical-align: baseline;
+  cursor: grab;
+  user-select: none;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cb-inline-badge:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.cb-inline-badge:active {
+  cursor: grabbing;
+}
+
+.cb-inline-badge-id {
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.cb-inline-badge-status {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.9em;
+}
+
+.cb-inline-badge-verif {
+  font-size: 1em;
+  margin-left: 2px;
+}
+
+.cb-inline-badge.cb-badge-draft {
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border-color: var(--background-modifier-border);
+}
+
+.cb-inline-badge.cb-badge-voice-locked {
+  color: #4a7c59;
+  background: rgba(74, 124, 89, 0.1);
+  border-color: #4a7c59;
+}
+
+.cb-inline-badge.cb-badge-fact-checked {
+  color: #2d5a8e;
+  background: rgba(45, 90, 142, 0.1);
+  border-color: #2d5a8e;
+}
+
+.cb-inline-badge.cb-badge-verified {
+  color: #1a7f5a;
+  background: rgba(26, 127, 90, 0.12);
+  border-color: #1a7f5a;
+}
+
+.cb-inline-badge.cb-badge-needs-primary {
+  color: #b8860b;
+  background: rgba(184, 134, 11, 0.12);
+  border-color: #b8860b;
+}
+
+.cb-inline-badge.cb-badge-constructed {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  border-color: #8b5cf6;
+}
+
+.cb-inline-badge.cb-badge-gated {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  border-color: #dc2626;
+}
+
+.cb-inline-badge.cb-badge-compliance-passed {
+  color: #059669;
+  background: rgba(5, 150, 105, 0.12);
+  border-color: #059669;
+}
+
+.cb-inline-badge.cb-badge-final {
+  color: #ffffff;
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+}
+
+/* Hover popover for badges */
+
+.cb-badge-hover {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-family: var(--font-interface);
+  font-size: 0.85em;
+  max-width: 360px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.cb-badge-hover-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-normal);
+}
+
+.cb-badge-hover-row {
+  display: flex;
+  gap: 8px;
+  margin: 2px 0;
+  color: var(--text-muted);
+}
+
+.cb-badge-hover-row .cb-badge-hover-key {
+  flex: 0 0 80px;
+  text-transform: uppercase;
+  font-size: 0.75em;
+  letter-spacing: 0.05em;
+}
+
+.cb-badge-hover-row .cb-badge-hover-value {
+  flex: 1;
+  color: var(--text-normal);
+}
+
+.cb-badge-hover-sources a {
+  color: var(--interactive-accent);
+  text-decoration: none;
+}
+
+.cb-badge-hover-sources a:hover {
+  text-decoration: underline;
+}
+
+/* Drop indicator for drag-and-drop reorder */
+
+.cb-drop-indicator {
+  border-top: 2px solid var(--interactive-accent) !important;
+  background: rgba(var(--interactive-accent-rgb, 99, 102, 241), 0.08) !important;
+  margin-top: 4px;
+}
+
+.cm-line.cb-drop-indicator {
+  position: relative;
+}
+
+.cb-inline-badge[draggable="true"] {
+  -webkit-user-drag: element;
+}
+
 .cb-badge-draft {
   color: var(--text-muted);
   background: var(--background-secondary);
