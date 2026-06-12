@@ -22,7 +22,7 @@ An Obsidian plugin for copywriters working on multi-file promo decks (VSLs, sale
 ### 1. Install via BRAT (recommended for personal use)
 
 1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) in Obsidian
-2. Open BRAT → "Add Beta plugin" → paste `https://github.com/BrandonThompson/copy-blocks`
+2. Open BRAT → "Add Beta plugin" → paste `https://github.com/markerx/copy-blocks`
 3. Enable "Copy Blocks" in Settings → Community Plugins
 
 ### 2. Or install manually
