@@ -140,10 +140,12 @@ export interface CopyBlocksSettings {
   colorScheme: "default" | "high-contrast";
   /** Whether to show the metadata sidebar by default in view mode. */
   showSidebar: boolean;
-  /** Frontmatter key that identifies a note as a promo-copy deck file. */
+  /** Frontmatter key that identifies a note as a deck file. */
   deckMarkerKey: string;
   /** Frontmatter key that identifies the deck the file belongs to. */
   deckIdKey: string;
+  /** Value the deck marker key must equal for a note to be treated as a deck file. */
+  deckMarkerValue: string;
 }
 
 /** Default status taxonomy — derived from the patterns observed in DefenseTech copy. */
@@ -168,4 +170,5 @@ export const DEFAULT_SETTINGS: CopyBlocksSettings = {
   showSidebar: true,
   deckMarkerKey: "type",
   deckIdKey: "deck",
+  deckMarkerValue: "copy-blocks",
 };

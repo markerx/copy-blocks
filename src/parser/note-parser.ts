@@ -139,13 +139,12 @@ function inferDeckFromPath(path: string): string | undefined {
 }
 
 /**
- * Index the entire vault for promo-copy notes. Returns a Map keyed by
+ * Index the entire vault for deck notes. Returns a Map keyed by
  * deck id → list of parsed notes. Used by the deck dashboard.
  */
 export async function indexVault(
   vault: Vault,
-  markerKey: string,
-  deckIdKey: string
+  settings: { deckMarkerKey: string; deckMarkerValue: string; deckIdKey: string }
 ): Promise<Map<string, ParsedNote[]>> {
   const decks = new Map<string, ParsedNote[]>();
 
@@ -158,10 +157,10 @@ export async function indexVault(
     }
 
     const { frontmatter } = extractFrontmatter(raw);
-    if (frontmatter[markerKey] !== "promo-copy") continue;
+    if (frontmatter[settings.deckMarkerKey] !== settings.deckMarkerValue) continue;
 
     const deckId =
-      frontmatter[deckIdKey] ??
+      frontmatter[settings.deckIdKey] ??
       inferDeckFromPath(file.path) ??
       "Unfiled";
 

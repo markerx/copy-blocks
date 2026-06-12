@@ -25,7 +25,7 @@ export class CopyBlocksSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Deck marker frontmatter key")
       .setDesc(
-        "Notes with this frontmatter key set to 'promo-copy' are treated as deck files. " +
+        "Frontmatter key used to identify a note as a deck file. " +
           "Default: 'type'."
       )
       .addText((text) =>
@@ -33,6 +33,23 @@ export class CopyBlocksSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.deckMarkerKey)
           .onChange(async (value) => {
             this.plugin.settings.deckMarkerKey = value.trim() || "type";
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Deck marker value")
+      .setDesc(
+        "The value the deck marker key must equal for a note to be " +
+          "treated as a deck file. Default: 'copy-blocks'. " +
+          "If you have existing files using a different value, change this " +
+          "to match them, or update the files to use 'type: copy-blocks'."
+      )
+      .addText((text) =>
+        text
+          .setValue(this.plugin.settings.deckMarkerValue)
+          .onChange(async (value) => {
+            this.plugin.settings.deckMarkerValue = value.trim() || "copy-blocks";
             await this.plugin.saveSettings();
           })
       );

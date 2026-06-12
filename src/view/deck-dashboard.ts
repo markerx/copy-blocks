@@ -40,11 +40,11 @@ export class DeckDashboardView extends ItemView {
     this.contentEl.createEl("h2", { text: "Decks" });
 
     // Index the vault
-    const decks = await indexVault(
-      this.app.vault,
-      this.settings.deckMarkerKey,
-      this.settings.deckIdKey
-    );
+    const decks = await indexVault(this.app.vault, {
+      deckMarkerKey: this.settings.deckMarkerKey,
+      deckMarkerValue: this.settings.deckMarkerValue,
+      deckIdKey: this.settings.deckIdKey,
+    });
 
     this.contentEl.empty();
     this.contentEl.addClass("copy-blocks-dashboard");

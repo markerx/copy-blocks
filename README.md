@@ -35,7 +35,7 @@ An Obsidian plugin for copywriters working on multi-file promo decks (VSLs, sale
 
 ### Marker grammar
 
-In any note with `type: promo-copy` in its frontmatter, add beat markers above each copy block:
+In any note with `type: copy-blocks` in its frontmatter, add beat markers above each copy block:
 
 ```markdown
 <!--section: 1 status:draft-v1 verified:unknown sources:"[[Big-Idea]]" label:"Cold Open"-->
@@ -72,7 +72,7 @@ The pill color matches the status taxonomy configured in settings. Hover the pil
 
 ### Open in Copy Blocks
 
-1. Open a `promo-copy` note in Obsidian
+1. Open a `copy-blocks` note in Obsidian
 2. Click the **list icon** in the ribbon, or run the command "Open current file in Copy Blocks"
 3. Use **← Previous** / **Next →** buttons (or the commands) to navigate beats
 4. The sidebar shows the beat's status, verification, sources, and frontmatter context
@@ -92,7 +92,7 @@ The pill color matches the status taxonomy configured in settings. Hover the pil
 | Create reading view as new note | Export clean prose to `<file> — Reading View.md` |
 | Create stage view as new note | Export stage blocks to `<file> — Stage View.md` |
 
-### Editor shortcuts (inside any `type: promo-copy` note)
+### Editor shortcuts (inside any `type: copy-blocks` note)
 
 | Shortcut | What it does |
 |---|---|
@@ -115,7 +115,8 @@ The plugin detects these and builds a cross-file dependency graph. (Currently sh
 
 Open **Settings → Copy Blocks** to configure:
 
-- **Deck marker frontmatter key** — which frontmatter key marks a note as a promo-copy file (default: `type`)
+- **Deck marker frontmatter key** — which frontmatter key marks a note as a deck file (default: `type`)
+- **Deck marker value** — what value that key must equal (default: `copy-blocks`)
 - **Deck id frontmatter key** — which key holds the deck name (default: `deck`)
 - **Show metadata sidebar in view mode** — toggle the right sidebar
 - **Drift threshold (days)** — how stale a footnote can be before being flagged
