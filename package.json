@@ -1,0 +1,32 @@
+{
+  "name": "copy-blocks",
+  "version": "0.1.0",
+  "description": "Stage promo-copy beats with structured metadata, status tracking, and cross-file threading.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "keywords": [
+    "obsidian",
+    "plugin",
+    "copywriting",
+    "promo"
+  ],
+  "author": "Brandon Thompson",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.20.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-obsidianmd": "^0.3.0",
+    "obsidian": "^1.13.0",
+    "tslib": "^2.6.0",
+    "typescript": "^5.3.0"
+  }
+}
