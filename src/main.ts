@@ -1,9 +1,16 @@
-import { Plugin, WorkspaceLeaf, TFile, Notice } from "obsidian";
+import { Plugin, WorkspaceLeaf, TFile, Notice, Editor, MarkdownView } from "obsidian";
 import {
   BEAT_VIEW_TYPE,
   BeatView,
 } from "./view/beat-view";
-import { DASHBOARD_VIEW_TYPE, DeckDashboardView } from "./view/deck-dashboard";
+import {
+  DASHBOARD_VIEW_TYPE,
+  DeckDashboardView,
+} from "./view/deck-dashboard";
+import {
+  OUTLINE_VIEW_TYPE,
+  OutlineView,
+} from "./view/outline-view";
 import { CopyBlocksSettings, DEFAULT_SETTINGS } from "./types";
 import { CopyBlocksSettingTab } from "./settings";
 import { beatsToReadingView, beatsToStageView } from "./view/reading-view";
@@ -21,6 +28,7 @@ export default class CopyBlocksPlugin extends Plugin {
     // Register views
     this.registerView(BEAT_VIEW_TYPE, (leaf) => new BeatView(leaf, this.settings));
     this.registerView(DASHBOARD_VIEW_TYPE, (leaf) => new DeckDashboardView(leaf, this.settings));
+    this.registerView(OUTLINE_VIEW_TYPE, (leaf) => new OutlineView(leaf, this.settings));
 
     // Register editor extensions — these apply to all markdown editors.
     // Section badges (color-coded status pills) + drag/keyboard reorder.
@@ -46,6 +54,24 @@ export default class CopyBlocksPlugin extends Plugin {
       id: "open-dashboard",
       name: "Open deck dashboard",
       callback: () => this.activateDashboardView(),
+    });
+
+    this.addCommand({
+      id: "open-outline-view",
+      name: "Open in outline view",
+      callback: async () => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) {
+          new Notice("Open a markdown file first.");
+          return;
+        }
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.setViewState({ type: OUTLINE_VIEW_TYPE, active: true });
+        const view = leaf.view as OutlineView;
+        if (view && view.loadFile) {
+          await view.loadFile(file);
+        }
+      },
     });
 
     this.addCommand({
@@ -299,6 +325,12 @@ export default class CopyBlocksPlugin extends Plugin {
     if (view && view.loadFile) {
       await view.loadFile(file);
     }
+  }
+
+  private getActiveOutlineView(): OutlineView | null {
+    const leaves = this.app.workspace.getLeavesOfType(OUTLINE_VIEW_TYPE);
+    if (leaves.length === 0) return null;
+    return leaves[0]!.view as OutlineView;
   }
 
   private async activateDashboardView(): Promise<void> {

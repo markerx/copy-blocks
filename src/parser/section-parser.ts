@@ -1,9 +1,9 @@
-import { Beat, VerificationState } from "../types";
-
 /**
+ * Core section-marker parser.
+ *
  * Marker grammar:
  *
- *   <!--section: 1.2.4 status:voice-locked verified:yes sources:"[[Big-Idea]]", "[[03-Seven-Lenses-Reveal]]" label:"Big Idea Reveal"-->
+ *   <!--section: 1.2.4 status:voice-locked verified:yes sources:"[[Big-Idea]]", "[[03-Seven-Lenses-Reveal]]"-->
  *
  * All fields are optional except `id`. The parser is permissive — unknown
  * fields are preserved as raw key/value pairs on the beat.
@@ -12,10 +12,18 @@ import { Beat, VerificationState } from "../types";
  * used by Branch Writing unless it has no other fields; if the user just
  * writes that bare form, we still parse it (with empty status + sources +
  * default verification). Both styles work.
+ *
+ * The "label" / display title of a beat is NOT a marker field — it's the
+ * first line of bold text in the beat's content (see extractBeatTitle).
  */
 
-const MARKER_PATTERN =
-  /<!--\s*section:\s*([^\s>]+?)\s*([^>]*?)\s*-->/g;
+import { Beat, VerificationState } from "../types";
+
+// Match a section marker: <!--section: ID [fields...]-->
+// We match the whole comment to avoid the non-greedy issues with dots in IDs.
+// The body of the comment (between <!-- and -->) is captured as one group;
+// the ID and fields are extracted from it in code.
+const MARKER_PATTERN = /<!--\s*section:(\s+|\s*-->)([\s\S]*?)-->/g;
 
 const FIELD_PATTERN = /(\w+):(?:"([^"]*)"|'([^']*)'|(\S+))/g;
 
@@ -35,7 +43,16 @@ export function parseSections(text: string): ParseResult {
   // Reset regex state — important if the regex has the /g flag and we re-use it.
   MARKER_PATTERN.lastIndex = 0;
   while ((m = MARKER_PATTERN.exec(text)) !== null) {
-    matches.push({ match: m, id: m[1], fields: m[2] ?? "" });
+    // The first group is the separator after "section:" (whitespace or end).
+    // The second group is the body. If body is empty, this is a bare marker.
+    const body = m[2] ?? "";
+    const idMatch = body.match(/^(\S+)(?:\s+(.*))?$/);
+    if (!idMatch) continue;
+    matches.push({
+      match: m,
+      id: idMatch[1]!,
+      fields: idMatch[2] ?? "",
+    });
   }
 
   if (matches.length === 0) {
@@ -56,7 +73,6 @@ export function parseSections(text: string): ParseResult {
 
     const beat: Beat = {
       id,
-      label: parsed.label,
       status: parsed.status ?? "draft-v1",
       verification: normalizeVerification(parsed.verified, parsed.verification),
       sources: parsed.sources ?? [],
@@ -77,7 +93,6 @@ interface ParsedFields {
   status?: string;
   verified?: string;
   verification?: string;
-  label?: string;
   sources?: string[];
   [key: string]: string | string[] | undefined;
 }
@@ -144,15 +159,13 @@ function normalizeVerification(
 }
 
 /**
- * Serialize a beat back to a marker string. Used by reorder, status-change,
- * and split/merge commands.
+ * Serialize a beat back to a marker string.
  */
 export function serializeMarker(beat: {
   id: string;
   status?: string;
   verification?: VerificationState;
   sources?: string[];
-  label?: string;
 }): string {
   const parts: string[] = [`section: ${beat.id}`];
 
@@ -169,11 +182,56 @@ export function serializeMarker(beat: {
     parts.push(`sources:${srcs}`);
   }
 
-  if (beat.label) {
-    parts.push(`label:"${beat.label}"`);
-  }
-
   return `<!-- ${parts.join(" ")} -->`;
+}
+
+/**
+ * Extract a beat's display title from its content.
+ *
+ * The title is the FIRST non-empty line of the beat's content, with
+ * markdown markers stripped (heading hashes, blockquote, list, bold).
+ * Falls back to "Beat {id}" if no non-empty line is found.
+ *
+ * Matches the Branch Writing convention where the first bold/heading
+ * line of a section is treated as its display title.
+ */
+export function extractBeatTitle(content: string, fallbackId: string): string {
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line
+      .replace(/^#+\s*/, "")
+      .replace(/^>\s*/, "")
+      .replace(/^[-*+]\s+/, "")
+      .replace(/^\*\*|\*\*$/g, "")
+      .replace(/^`|`$/g, "")
+      .trim();
+    if (trimmed.length > 0) {
+      if (trimmed.length > 60) {
+        return trimmed.slice(0, 57) + "…";
+      }
+      return trimmed;
+    }
+  }
+  return `Beat ${fallbackId}`;
+}
+
+/**
+ * Replace the first non-empty line of a beat's content with a bolded
+ * title. Used by the click-to-rename interaction.
+ */
+export function setBeatTitleInContent(content: string, title: string): string {
+  const stripped = content.replace(/^\s+/, "");
+  if (stripped.length === 0) {
+    return `**${title}**\n\n`;
+  }
+  const lines = stripped.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i]!.trim().length > 0) {
+      lines[i] = `**${title}**`;
+      return lines.join("\n");
+    }
+  }
+  return `**${title}**\n\n${stripped}`;
 }
 
 /**
@@ -205,4 +263,50 @@ function verificationToShortForm(v: VerificationState): string {
     case "unknown":
       return "unknown";
   }
+}
+
+/**
+ * Get the depth of a beat id (count of dots + 1).
+ * "1" → 1, "1.2" → 2, "1.2.4" → 3, "1.2.4.3" → 4
+ */
+export function beatDepth(beatId: string): number {
+  return beatId.split(".").length;
+}
+
+/**
+ * Get the parent id of a beat, or null for top-level beats.
+ * "1.2.4" → "1.2", "1.2" → "1", "1" → null
+ */
+export function parentBeatId(beatId: string): string | null {
+  const parts = beatId.split(".");
+  if (parts.length <= 1) return null;
+  return parts.slice(0, -1).join(".");
+}
+
+/**
+ * Group beats by their parent id, producing a tree structure.
+ * Returns a map: parentId → list of child beats (in document order).
+ * Top-level beats have parent id of "".
+ */
+export function buildBeatTree(beats: Beat[]): Map<string, Beat[]> {
+  const tree = new Map<string, Beat[]>();
+  for (const beat of beats) {
+    const parent = parentBeatId(beat.id) ?? "";
+    if (!tree.has(parent)) tree.set(parent, []);
+    tree.get(parent)!.push(beat);
+  }
+  return tree;
+}
+
+/**
+ * Compute the breadcrumbs for a beat id: the chain of ancestor ids.
+ * "1.2.4" → ["1", "1.2", "1.2.4"]
+ */
+export function beatBreadcrumb(beatId: string): string[] {
+  const parts = beatId.split(".");
+  const crumbs: string[] = [];
+  for (let i = 1; i <= parts.length; i++) {
+    crumbs.push(parts.slice(0, i).join("."));
+  }
+  return crumbs;
 }

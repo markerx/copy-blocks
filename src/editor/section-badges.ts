@@ -23,25 +23,21 @@ import {
   MatchDecorator,
 } from "@codemirror/view";
 import { Extension, RangeSetBuilder } from "@codemirror/state";
-import { parseFields } from "../parser/section-parser";
+import { parseFields, extractBeatTitle } from "../parser/section-parser";
 import { StatusConfig } from "../types";
 
-const MARKER_REGEX = /<!--\s*section:\s*([^\s>]+?)(?:\s+([^\-]+?))?\s*-->/g;
+const MARKER_REGEX = /<!--\s*section:\s*([^\s>]+?)\s*([^>]*?)\s*-->/g;
 
 interface ParsedMarker {
   id: string;
   status: string;
   verification: string;
   sources: string[];
-  label?: string;
-  /** The full text of the marker, used as the widget's "underlying" reference. */
   raw: string;
 }
 
 function parseMarkerText(raw: string): ParsedMarker | null {
-  // Strip the <!-- and --> wrappers
   const inner = raw.replace(/^<!--\s*/, "").replace(/\s*-->$/, "");
-  // Match "section: <id> [fields...]"
   const m = inner.match(/^section:\s*([^\s]+?)(?:\s+(.*))?$/);
   if (!m) return null;
 
@@ -49,10 +45,9 @@ function parseMarkerText(raw: string): ParsedMarker | null {
   const fields = parseFields(m[2] ?? "");
   return {
     id,
-    status: fields.status ?? "draft-v1",
-    verification: fields.verified ?? "unknown",
-    sources: fields.sources ?? [],
-    label: fields.label,
+    status: (fields.status as string) ?? "draft-v1",
+    verification: (fields.verified as string) ?? "unknown",
+    sources: (fields.sources as string[]) ?? [],
     raw,
   };
 }
@@ -72,8 +67,7 @@ class BeatBadgeWidget extends WidgetType {
     return (
       this.parsed.id === other.parsed.id &&
       this.parsed.status === other.parsed.status &&
-      this.parsed.verification === other.parsed.verification &&
-      this.parsed.label === other.parsed.label
+      this.parsed.verification === other.parsed.verification
     );
   }
 
@@ -122,7 +116,7 @@ class BeatBadgeWidget extends WidgetType {
 
   private buildTooltip(): string {
     const lines: string[] = [];
-    lines.push(`Beat ${this.parsed.id}${this.parsed.label ? " — " + this.parsed.label : ""}`);
+    lines.push(`Beat ${this.parsed.id}`);
     lines.push(`Status: ${this.parsed.status}`);
     lines.push(`Verification: ${this.parsed.verification}`);
     if (this.parsed.sources.length > 0) {

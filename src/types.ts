@@ -11,8 +11,6 @@
 export interface Beat {
   /** Hierarchical id parsed from the marker, e.g. "1.2.4" or "1". */
   id: string;
-  /** Optional human-readable label, e.g. "Cold Open" or "Big Idea Reveal". */
-  label?: string;
   /** Status taxonomy value, e.g. "draft-v1", "voice-locked", "final". */
   status: string;
   /** Whether the underlying claim is verified, needs primary source, etc. */

@@ -1,4 +1,5 @@
 import { Beat } from "../types";
+import { extractBeatTitle } from "../parser/section-parser";
 
 /**
  * Strip markers and frontmatter, output clean prose.
@@ -18,9 +19,8 @@ export function beatsToReadingView(beats: Beat[]): string {
 export function beatsToStageView(beats: Beat[]): string {
   return beats
     .map((beat) => {
-      const header = beat.label
-        ? `### ${beat.id} — ${beat.label}\n\n`
-        : `### ${beat.id}\n\n`;
+      const title = extractBeatTitle(beat.content, beat.id);
+      const header = `### ${beat.id} — ${title}\n\n`;
       return header + beat.content.trim();
     })
     .filter((content) => content.length > 0)

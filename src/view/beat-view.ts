@@ -1,6 +1,7 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownRenderer, Component } from "obsidian";
 import { Beat, CopyBlocksSettings, VerificationState } from "../types";
 import { parseNote } from "../parser/note-parser";
+import { extractBeatTitle } from "../parser/section-parser";
 
 export const BEAT_VIEW_TYPE = "copy-blocks-beat-view";
 
@@ -22,7 +23,8 @@ export class BeatView extends ItemView {
   getDisplayText(): string {
     if (this.parsed && this.currentBeatIndex < this.parsed.beats.length) {
       const beat = this.parsed.beats[this.currentBeatIndex]!;
-      return `Beat ${beat.id}${beat.label ? " — " + beat.label : ""}`;
+      const title = extractBeatTitle(beat.content, beat.id);
+      return title.length > 30 ? `Beat ${beat.id}` : `Beat ${beat.id} — ${title}`;
     }
     return "Copy Blocks";
   }
@@ -130,8 +132,9 @@ export class BeatView extends ItemView {
     const idBadge = beatEl.createDiv({ cls: "copy-blocks-beat-id" });
     idBadge.setText(`Beat ${beat.id}`);
 
-    if (beat.label) {
-      const labelEl = beatEl.createEl("h2", { text: beat.label });
+    if (true) {
+      const title = extractBeatTitle(beat.content, beat.id);
+      const labelEl = beatEl.createEl("h2", { text: title });
       labelEl.style.fontSize = "0.9em";
       labelEl.style.color = "var(--text-muted)";
       labelEl.style.fontWeight = "normal";
