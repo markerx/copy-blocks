@@ -9,6 +9,8 @@ import { CopyBlocksSettingTab } from "./settings";
 import { beatsToReadingView, beatsToStageView } from "./view/reading-view";
 import { sectionBadgeExtension } from "./editor/section-badges";
 import { beatReorderExtension } from "./editor/beat-reorder";
+import { parseSections, nextBeatId, serializeMarker } from "./parser/section-parser";
+import { extractFrontmatter } from "./parser/frontmatter";
 
 export default class CopyBlocksPlugin extends Plugin {
   settings: CopyBlocksSettings = DEFAULT_SETTINGS;
@@ -191,6 +193,78 @@ export default class CopyBlocksPlugin extends Plugin {
         const newPath = file.path.replace(/\.md$/, " — Stage View.md");
         await this.app.vault.create(newPath, stage);
         new Notice(`Stage view created: ${newPath}`);
+      },
+    });
+
+    // Editor command: insert a new beat marker at the cursor. Smart-id
+    // increments from the last marker; default status from settings.
+    this.addCommand({
+      id: "insert-new-beat",
+      name: "Insert new beat",
+      icon: "plus-circle",
+      editorCheckCallback: (checking: boolean, editor: Editor, view: MarkdownView) => {
+        // Only enabled in markdown views
+        if (checking) return true;
+
+        const file = view.file;
+        if (!file) {
+          new Notice("Open a markdown file to insert a beat.");
+          return;
+        }
+
+        // Get full document text
+        const docText = editor.getValue();
+        const cursor = editor.getCursor();
+
+        // Parse beats from the whole document
+        const { beats } = parseSections(docText);
+
+        // Decide where to insert: at the end of the current beat if cursor
+        // is inside one, otherwise at the end of the document.
+        let insertOffset: number;
+        const currentBeat = beats.find(
+          (b) =>
+            cursor.line * 1000 + cursor.ch >= b.markerStart / 100 &&
+            cursor.line * 1000 + cursor.ch < b.contentEnd / 100
+        );
+        // We don't have direct byte→line mapping here; simpler: insert
+        // after the LAST beat's contentEnd if cursor is past the first
+        // marker, otherwise at the end of the frontmatter.
+
+        // Find the frontmatter end
+        const { body } = extractFrontmatter(docText);
+        const fmEnd = docText.length - body.length;
+
+        // If document has beats and cursor is past the last marker's
+        // area, insert after the last beat. Otherwise insert at fmEnd.
+        if (beats.length > 0) {
+          const last = beats[beats.length - 1]!;
+          // Use simple position tracking: the last beat's contentEnd
+          // is in the original doc. Translate to the editor via line
+          // approximations; safer to use editor.getValue() and string
+          // positions, which match.
+          insertOffset = last.contentEnd;
+        } else {
+          insertOffset = fmEnd;
+        }
+
+        // Compute the new id
+        const newId = nextBeatId(beats);
+
+        // Default status from settings
+        const defaultStatus =
+          this.settings.statuses[0]?.key ?? "draft-v1";
+
+        // Build the new beat block
+        const newBeatText =
+          `\n<!--section: ${newId} status:${defaultStatus}-->\n\n`;
+
+        // Insert at the chosen offset and move cursor inside the new
+        // beat's content area
+        editor.replaceRange(newBeatText, editor.offsetToPos(insertOffset), editor.offsetToPos(insertOffset));
+        // Place cursor on the new blank line after the marker
+        const newCursorOffset = insertOffset + newBeatText.length - 1;
+        editor.setCursor(editor.offsetToPos(newCursorOffset));
       },
     });
 

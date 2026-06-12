@@ -176,6 +176,22 @@ export function serializeMarker(beat: {
   return `<!-- ${parts.join(" ")} -->`;
 }
 
+/**
+ * Compute the next beat id given the existing beats in the file.
+ * Increments the rightmost numeric component; if no beats exist,
+ * returns "1".
+ */
+export function nextBeatId(beats: Beat[]): string {
+  if (beats.length === 0) return "1";
+  const last = beats[beats.length - 1]!;
+  const parts = last.id.split(".");
+  const tail = parts[parts.length - 1]!;
+  const n = parseInt(tail, 10);
+  if (isNaN(n)) return "1";
+  parts[parts.length - 1] = String(n + 1);
+  return parts.join(".");
+}
+
 function verificationToShortForm(v: VerificationState): string {
   switch (v) {
     case "verified":
