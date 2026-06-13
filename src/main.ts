@@ -11,7 +11,8 @@ import {
   OUTLINE_VIEW_TYPE,
   OutlineView,
 } from "./view/outline-view";
-import { CopyBlocksSettings, DEFAULT_SETTINGS } from "./types";
+import { WritingView, WRITING_VIEW_TYPE } from "./view/writing-view";
+import { CopyBlocksSettings, DEFAULT_SETTINGS, DEFAULT_THEME, TYPEWRITER_THEME, DARK_THEME } from "./types";
 import { CopyBlocksSettingTab } from "./settings";
 import { beatsToReadingView, beatsToStageView } from "./view/reading-view";
 import { sectionBadgeExtension } from "./editor/section-badges";
@@ -28,6 +29,7 @@ export default class CopyBlocksPlugin extends Plugin {
     this.registerView(BEAT_VIEW_TYPE, (leaf) => new BeatView(leaf, this.settings));
     this.registerView(DASHBOARD_VIEW_TYPE, (leaf) => new DeckDashboardView(leaf, this.settings));
     this.registerView(OUTLINE_VIEW_TYPE, (leaf) => new OutlineView(leaf, this.settings));
+    this.registerView(WRITING_VIEW_TYPE, (leaf) => new WritingView(leaf, this.settings));
 
     // Register editor extensions — these apply to all markdown editors.
     // Section badges (color-coded status pills) + drag/keyboard reorder.
@@ -69,6 +71,68 @@ export default class CopyBlocksPlugin extends Plugin {
         const view = leaf.view as OutlineView;
         if (view && view.loadFile) {
           await view.loadFile(file);
+        }
+      },
+    });
+
+    // === Writing view (full-screen roam-style writing tool) ===
+
+    this.addCommand({
+      id: "open-writing-view",
+      name: "Open in writing view (full-screen)",
+      callback: async () => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) {
+          new Notice("Open a markdown file first.");
+          return;
+        }
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.setViewState({ type: WRITING_VIEW_TYPE, active: true });
+        const view = leaf.view as WritingView;
+        if (view && view.loadFile) {
+          await view.loadFile(file);
+        }
+      },
+    });
+
+    /**
+     * Toggle between the markdown source editor and the writing view.
+     * Operates on the active leaf: if it's a markdown source view, switch
+     * to writing view (and vice versa). If it's some other view, opens
+     * the writing view for the current file.
+     */
+    this.addCommand({
+      id: "toggle-writing-view",
+      name: "Toggle Edit / Copy Blocks view",
+      icon: "layout-list",
+      callback: async () => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) {
+          new Notice("Open a markdown file first.");
+          return;
+        }
+
+        // Check the active leaf's view type
+        const activeLeaf = this.app.workspace.getLeaf(false);
+        const view = activeLeaf.view;
+
+        if (view instanceof WritingView) {
+          // Currently in writing view → switch to source editor
+          await activeLeaf.setViewState({
+            type: "markdown",
+            state: { mode: "source", file: file.path },
+            active: true,
+          });
+        } else {
+          // Currently in source/preview → switch to writing view
+          await activeLeaf.setViewState({
+            type: WRITING_VIEW_TYPE,
+            active: true,
+          });
+          const wv = activeLeaf.view as WritingView;
+          if (wv && wv.loadFile) {
+            await wv.loadFile(file);
+          }
         }
       },
     });

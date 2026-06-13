@@ -146,6 +146,44 @@ export interface CopyBlocksSettings {
   deckIdKey: string;
   /** Value the deck marker key must equal for a note to be treated as a deck file. */
   deckMarkerValue: string;
+  /** Writing-view theme settings. */
+  theme: WritingTheme;
+}
+
+/**
+ * Theme settings for the writing view.
+ *
+ * Every color, padding, and font is exposed so users can fully customize
+ * the look of the roam-style writing view. Light/dark/match-obsidian
+ * determines the base palette; everything else overrides.
+ */
+export interface WritingTheme {
+  /** Theme mode: "light", "dark", or "match-obsidian" (inherit from active Obsidian theme). */
+  mode: "light" | "dark" | "match-obsidian";
+  /** Card background colors, indexed by depth (0 = root, 1 = depth 2, etc.). */
+  cardBgByDepth: [string, string, string, string];
+  /** Card border color (default, not active). */
+  cardBorder: string;
+  /** Card border color when active. */
+  cardBorderActive: string;
+  /** Card border color on hover. */
+  cardBorderHover: string;
+  /** Card border color when a drag is hovering over it. */
+  cardBorderDrop: string;
+  /** Card body text color. */
+  cardText: string;
+  /** Muted text color (id labels, status labels). */
+  cardMuted: string;
+  /** Editor background (the writing view's main background). */
+  editorBg: string;
+  /** Card padding: "compact", "cozy", or "spacious". */
+  padding: "compact" | "cozy" | "spacious";
+  /** Card border radius: "none", "small", or "round". */
+  borderRadius: "none" | "small" | "round";
+  /** Body font size in pixels. */
+  fontSize: number;
+  /** Body font family, e.g. "Inter, system-ui, sans-serif" or "Courier New". */
+  fontFamily: string;
 }
 
 /** Default status taxonomy — derived from the patterns observed in DefenseTech copy. */
@@ -171,4 +209,71 @@ export const DEFAULT_SETTINGS: CopyBlocksSettings = {
   deckMarkerKey: "type",
   deckIdKey: "deck",
   deckMarkerValue: "copy-blocks",
+  theme: DEFAULT_THEME,
+};
+
+/** Default writing-view theme — light mode, gentle tints, comfortable spacing. */
+export const DEFAULT_THEME: WritingTheme = {
+  mode: "match-obsidian",
+  cardBgByDepth: [
+    "rgba(99, 102, 241, 0.04)",  // depth 1: faint indigo
+    "rgba(139, 92, 246, 0.04)",  // depth 2: faint violet
+    "rgba(34, 197, 94, 0.04)",   // depth 3: faint green
+    "rgba(234, 179, 8, 0.04)",   // depth 4: faint amber
+  ],
+  cardBorder: "var(--background-modifier-border)",
+  cardBorderActive: "var(--interactive-accent)",
+  cardBorderHover: "var(--interactive-accent)",
+  cardBorderDrop: "var(--interactive-accent)",
+  cardText: "var(--text-normal)",
+  cardMuted: "var(--text-muted)",
+  editorBg: "var(--background-primary)",
+  padding: "cozy",
+  borderRadius: "small",
+  fontSize: 15,
+  fontFamily: "var(--font-interface)",
+};
+
+/** A second preset: "Typewriter" — cream paper, dark ink, serif. */
+export const TYPEWRITER_THEME: WritingTheme = {
+  mode: "light",
+  cardBgByDepth: [
+    "rgba(252, 248, 237, 1)",  // cream
+    "rgba(248, 244, 230, 1)",
+    "rgba(244, 240, 224, 1)",
+    "rgba(240, 236, 218, 1)",
+  ],
+  cardBorder: "rgba(120, 100, 80, 0.3)",
+  cardBorderActive: "rgba(80, 60, 40, 1)",
+  cardBorderHover: "rgba(80, 60, 40, 0.6)",
+  cardBorderDrop: "rgba(80, 60, 40, 1)",
+  cardText: "rgba(40, 30, 20, 1)",
+  cardMuted: "rgba(100, 80, 60, 1)",
+  editorBg: "rgba(252, 248, 237, 1)",
+  padding: "spacious",
+  borderRadius: "none",
+  fontSize: 16,
+  fontFamily: "'Courier New', 'IBM Plex Mono', monospace",
+};
+
+/** A third preset: "Dark" — comfortable for night writing. */
+export const DARK_THEME: WritingTheme = {
+  mode: "dark",
+  cardBgByDepth: [
+    "rgba(99, 102, 241, 0.06)",
+    "rgba(139, 92, 246, 0.06)",
+    "rgba(34, 197, 94, 0.06)",
+    "rgba(234, 179, 8, 0.06)",
+  ],
+  cardBorder: "rgba(255, 255, 255, 0.08)",
+  cardBorderActive: "rgba(129, 140, 248, 1)",
+  cardBorderHover: "rgba(129, 140, 248, 0.6)",
+  cardBorderDrop: "rgba(129, 140, 248, 1)",
+  cardText: "rgba(230, 230, 235, 1)",
+  cardMuted: "rgba(150, 150, 160, 1)",
+  editorBg: "rgba(20, 20, 25, 1)",
+  padding: "cozy",
+  borderRadius: "small",
+  fontSize: 15,
+  fontFamily: "var(--font-interface)",
 };

@@ -233,6 +233,291 @@
   border-color: #1a1a1a;
 }
 
+/* === Writing view (full-screen roam-style writing tool) === */
+
+.cb-writing-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--cb-editor-bg, var(--background-primary));
+  color: var(--cb-card-text, var(--text-normal));
+  font-family: var(--cb-font-family, var(--font-interface));
+  font-size: var(--cb-font-size, 15px);
+}
+
+.cb-writing-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  flex-shrink: 0;
+}
+
+.cb-toolbar-filename {
+  font-weight: 600;
+  font-size: 0.95em;
+  color: var(--text-normal);
+  flex: 1;
+}
+
+.cb-toolbar-theme {
+  font-size: 0.75em;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 3px;
+}
+
+.cb-toolbar-right {
+  display: flex;
+  gap: 4px;
+}
+
+.cb-toolbar-btn {
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.85em;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cb-toolbar-btn:hover {
+  background: var(--interactive-hover);
+  color: var(--interactive-accent);
+}
+
+.cb-writing-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* === Left rail (TOC) === */
+
+.cb-writing-rail {
+  width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.cb-rail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cb-rail-card {
+  background: var(--cb-card-bg-depth-0, transparent);
+  border: 1px solid var(--cb-card-border, var(--background-modifier-border));
+  border-radius: var(--cb-card-radius, 6px);
+  padding: var(--cb-card-padding, 10px 14px);
+  position: relative;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+/* Per-depth background — use the same color for all depths unless --cb-depth-idx is set */
+.cb-rail-card[style*="--cb-depth-idx: 0"] {
+  background: var(--cb-card-bg-depth-0);
+}
+.cb-rail-card[style*="--cb-depth-idx: 1"] {
+  background: var(--cb-card-bg-depth-1);
+}
+.cb-rail-card[style*="--cb-depth-idx: 2"] {
+  background: var(--cb-card-bg-depth-2);
+}
+.cb-rail-card[style*="--cb-depth-idx: 3"] {
+  background: var(--cb-card-bg-depth-3);
+}
+
+.cb-rail-card:hover {
+  border-color: var(--cb-card-border-hover);
+}
+
+.cb-rail-card-active {
+  border-color: var(--cb-card-border-active) !important;
+  border-width: 2px;
+  background: rgba(var(--interactive-accent-rgb, 99, 102, 241), 0.08) !important;
+}
+
+.cb-rail-card-drop {
+  border-style: dashed;
+  border-color: var(--cb-card-border-drop) !important;
+  background: rgba(var(--interactive-accent-rgb, 99, 102, 241), 0.05) !important;
+}
+
+.cb-rail-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: grab;
+  user-select: none;
+}
+
+.cb-rail-card-header:active {
+  cursor: grabbing;
+}
+
+.cb-rail-card-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cb-rail-card-id {
+  font-family: var(--font-monospace);
+  font-size: 0.7em;
+  font-weight: 600;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.cb-rail-card-title {
+  flex: 1;
+  font-weight: 500;
+  color: var(--cb-card-text);
+  line-height: 1.4;
+  word-wrap: break-word;
+  cursor: pointer;
+  font-size: 0.95em;
+}
+
+.cb-rail-card-title:hover {
+  color: var(--interactive-accent);
+}
+
+.cb-rail-card-toggle {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65em;
+  color: var(--cb-card-muted, var(--text-muted));
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cb-rail-card-toggle:hover {
+  color: var(--cb-card-text);
+}
+
+.cb-rail-children {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+.cb-rail-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+/* === Prose pane (right) === */
+
+.cb-writing-prose {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--cb-editor-bg, var(--background-primary));
+}
+
+.cb-prose-pane {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 48px;
+  line-height: 1.7;
+  font-size: 1.05em;
+  color: var(--cb-card-text, var(--text-normal));
+}
+
+.cb-prose-breadcrumb {
+  font-family: var(--font-monospace);
+  font-size: 0.75em;
+  color: var(--cb-card-muted, var(--text-muted));
+  margin-bottom: 12px;
+}
+
+.cb-prose-crumb {
+  cursor: default;
+}
+
+.cb-prose-sep {
+  opacity: 0.4;
+  margin: 0 4px;
+}
+
+.cb-prose-id {
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cb-card-muted, var(--text-muted));
+  margin: 0 0 16px;
+  font-weight: 600;
+}
+
+.cb-prose-content {
+  line-height: 1.7;
+}
+
+.cb-prose-content p {
+  margin: 0 0 1em;
+}
+
+.cb-prose-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.cb-prose-action {
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.85em;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cb-prose-action:hover {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+
+/* === Status bar === */
+
+.cb-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: 0.75em;
+  font-family: var(--font-monospace);
+  flex-shrink: 0;
+}
+
 /* Outline view — Branch Writing style multi-column outline */
 
 .cb-outline-view {
