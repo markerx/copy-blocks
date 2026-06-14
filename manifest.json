@@ -1,7 +1,7 @@
 {
   "id": "copy-blocks",
   "name": "Copy Blocks",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "minAppVersion": "1.4.0",
   "description": "Stage promo-copy beats with structured metadata, status tracking, and cross-file threading. Read, reorder, and fact-check copy one beat at a time.",
   "author": "Brandon Thompson",

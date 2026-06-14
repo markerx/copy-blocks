@@ -198,19 +198,8 @@ export const DEFAULT_STATUSES: StatusConfig[] = [
   { key: "gated", label: "Gated", badgeClass: "cb-badge-gated", color: "#dc2626", order: 7 },
   { key: "compliance-passed", label: "Compliance-passed", badgeClass: "cb-badge-compliance-passed", color: "#059669", order: 8 },
   { key: "final", label: "Final", badgeClass: "cb-badge-final", color: "#1a1a1a", order: 9 },
+  { key: "final", label: "Final", badgeClass: "cb-badge-final", color: "#1a1a1a", order: 9 },
 ];
-
-export const DEFAULT_SETTINGS: CopyBlocksSettings = {
-  statuses: DEFAULT_STATUSES,
-  defaultVerification: "unknown",
-  driftThresholdDays: 7,
-  colorScheme: "default",
-  showSidebar: true,
-  deckMarkerKey: "type",
-  deckIdKey: "deck",
-  deckMarkerValue: "copy-blocks",
-  theme: DEFAULT_THEME,
-};
 
 /** Default writing-view theme — light mode, gentle tints, comfortable spacing. */
 export const DEFAULT_THEME: WritingTheme = {
@@ -234,11 +223,11 @@ export const DEFAULT_THEME: WritingTheme = {
   fontFamily: "var(--font-interface)",
 };
 
-/** A second preset: "Typewriter" — cream paper, dark ink, serif. */
+/** A second preset: "Typewriter" — cream paper, dark ink, monospace. */
 export const TYPEWRITER_THEME: WritingTheme = {
   mode: "light",
   cardBgByDepth: [
-    "rgba(252, 248, 237, 1)",  // cream
+    "rgba(252, 248, 237, 1)",
     "rgba(248, 244, 230, 1)",
     "rgba(244, 240, 224, 1)",
     "rgba(240, 236, 218, 1)",
@@ -276,4 +265,16 @@ export const DARK_THEME: WritingTheme = {
   borderRadius: "small",
   fontSize: 15,
   fontFamily: "var(--font-interface)",
+};
+
+export const DEFAULT_SETTINGS: CopyBlocksSettings = {
+  statuses: DEFAULT_STATUSES,
+  defaultVerification: "unknown",
+  driftThresholdDays: 7,
+  colorScheme: "default",
+  showSidebar: true,
+  deckMarkerKey: "type",
+  deckIdKey: "deck",
+  deckMarkerValue: "copy-blocks",
+  theme: DEFAULT_THEME,
 };
