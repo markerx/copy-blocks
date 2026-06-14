@@ -12,8 +12,9 @@
  *     content.
  *
  * Interactions:
- *   - Click a card → focus it, columns to the right reflow
- *   - Click into any card's content area → contenteditable
+ *   - Click a card header → focus it, columns to the right reflow
+ *   - Click into any card's content area → contenteditable, cursor appears
+ *   - Click the small "edit/select" button on a card → puts cursor in content
  *   - Tab in any content → create child, focus it
  *   - Shift+Enter in any content → create sibling, focus it
  *   - Back-arrow on a column (except leftmost) → unfocus that card,
@@ -137,12 +138,22 @@ export class WritingView extends ItemView {
     const raw = await this.app.vault.cachedRead(this.currentFile);
     let text = raw;
     for (const [beatId, content] of this.edits) {
-      // Find the marker for beatId, replace its content section
+      // Find the marker for beatId, replace its content section.
+      // Pattern: <!--section: ID ...--> ...content... (until next marker or EOF)
+      const escapedId = beatId.replace(/\./g, "\\.");
       const re = new RegExp(
-        `(<!--\\s*section:\\s*${beatId.replace(/\./g, "\\.")}\\s+[^>]*?-->)([\\s\\S]*?)(?=<!--\\s*section:|\\Z)`,
+        `(<!--\\s*section:\\s*${escapedId}\\b[^>]*?-->)([\\s\\S]*?)(?=<!--\\s*section:|$)`,
         "m"
       );
-      text = text.replace(re, (full, marker, _old) => `${marker}\n${content}`);
+      // For the LAST beat in the file, the lookahead matches end-of-string
+      // For middle beats, it matches the next marker
+      // The content we save is the full body (everything between the marker
+      // and the next marker / EOF).
+      text = text.replace(re, (full, marker) => {
+        // Trim trailing whitespace from the content but preserve leading
+        const trimmed = content.replace(/^\s+/, "").replace(/\s+$/, "");
+        return `${marker}\n${trimmed}\n`;
+      });
     }
     if (text !== raw) {
       await this.app.vault.modify(this.currentFile, text);
@@ -176,8 +187,7 @@ export class WritingView extends ItemView {
     const newMarker = serializeMarker({ id: newId, status: "draft-v1" });
     const newBlock = `\n${newMarker}\n`;
 
-    // Find where to insert: after the active beat's content, or at the
-    // end of the file
+    // Insert AFTER the active beat's content (if active), else at EOF
     let insertOffset: number;
     if (activeId) {
       const active = this.parsed.beats.find((b) => b.id === activeId);
@@ -196,6 +206,8 @@ export class WritingView extends ItemView {
     await this.refresh();
     this.focusPath = [...this.focusPath, newId];
     this.render();
+    // Focus the new card's content
+    setTimeout(() => this.focusCardContent(newId), 30);
   }
 
   private async createSiblingBeat(): Promise<void> {
@@ -220,6 +232,24 @@ export class WritingView extends ItemView {
     await this.refresh();
     this.focusPath = [...this.focusPath.slice(0, -1), newId];
     this.render();
+    setTimeout(() => this.focusCardContent(newId), 30);
+  }
+
+  private focusCardContent(beatId: string): void {
+    const el = this.contentEl.querySelector<HTMLElement>(
+      `.cb-card-content[data-cb-beat-id="${beatId}"]`
+    );
+    if (el) {
+      el.focus();
+      // Select all so typing replaces the placeholder content
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
   }
 
   private async reparentBeat(movedId: string, newParentId: string | null): Promise<void> {
@@ -232,7 +262,6 @@ export class WritingView extends ItemView {
     const newText = applyIdMap(raw, idMap);
     await this.app.vault.modify(this.currentFile, newText);
     await this.refresh();
-    // Update focus path if the moved beat was in it
     this.focusPath = beatBreadcrumb(moved);
     this.render();
   }
@@ -241,7 +270,6 @@ export class WritingView extends ItemView {
     if (!this.currentFile) return;
     const raw = await this.app.vault.cachedRead(this.currentFile);
     this.parsed = parseNote(this.currentFile, raw);
-    // Restore focus path if possible
     if (this.focusPath.length > 0) {
       const tip = this.focusPath[this.focusPath.length - 1]!;
       if (!this.parsed.beats.find((b) => b.id === tip)) {
@@ -274,19 +302,13 @@ export class WritingView extends ItemView {
       empty.createEl("p", {
         text: 'Add a <!--section: ...--> marker, or run the "Insert new beat" command. Once you have beats, this view will render them as a tree.',
       });
-      // Quick-action: insert first beat
       const insert = empty.createEl("button", { text: "Insert first beat", cls: "cb-empty-action" });
       insert.addEventListener("click", () => this.createChildBeat());
       return;
     }
 
-    // Top toolbar
     this.renderToolbar(root, this.currentFile?.basename ?? "Untitled");
-
-    // Breadcrumb
     this.renderBreadcrumb(root);
-
-    // The columns
     const main = root.createDiv({ cls: "cb-writing-main" });
     this.renderColumns(main);
   }
@@ -302,12 +324,8 @@ export class WritingView extends ItemView {
     themeLabel.textContent = `Theme: ${this.settings.theme.mode === "match-obsidian" ? "obsidian" : this.settings.theme.mode}`;
 
     const rightGroup = toolbar.createDiv({ cls: "cb-toolbar-right" });
-
-    // Edit toggle
     const editBtn = rightGroup.createEl("button", { text: "Edit", cls: "cb-toolbar-btn" });
     editBtn.addEventListener("click", () => this.toggleToEdit());
-
-    // Settings
     const settings = rightGroup.createEl("button", { text: "⚙", cls: "cb-toolbar-btn" });
     settings.title = "Copy Blocks settings";
     settings.addEventListener("click", () => {
@@ -338,7 +356,6 @@ export class WritingView extends ItemView {
       this.focusPath = [];
       this.render();
     });
-
     for (let i = 0; i < this.focusPath.length; i++) {
       const id = this.focusPath[i]!;
       const beat = this.parsed?.beats.find((b) => b.id === id);
@@ -361,17 +378,14 @@ export class WritingView extends ItemView {
     if (!this.parsed) return;
     const tree = buildBeatTree(this.parsed.beats);
 
-    // The root column (column 1) shows the file's top-level cards
-    // The next column (column 2) shows children of the focused card in column 1
-    // Etc.
     const root = main.createDiv({ cls: "cb-columns-canvas" });
 
-    // Column 1: children of "" (the file root)
+    // Column 1: top-level cards (children of "")
     const topLevelBeats = tree.get("") ?? [];
     this.renderColumn(root, topLevelBeats, "Top level", null, 0);
 
-    // Subsequent columns: each one shows children of the focused beat
-    // in the previous column
+    // Subsequent columns: each shows children of the focused beat in
+    // the previous column. The focus path is the chain from root to active.
     for (let i = 0; i < this.focusPath.length; i++) {
       const parentId = this.focusPath[i]!;
       const children = tree.get(parentId) ?? [];
@@ -391,7 +405,6 @@ export class WritingView extends ItemView {
     const col = parent.createDiv({ cls: "cb-column" });
     col.style.setProperty("--cb-col-level", String(level));
 
-    // Column header
     const header = col.createDiv({ cls: "cb-column-header" });
     const back = header.createSpan({ text: "←", cls: "cb-column-back" });
     if (parentId === null) {
@@ -406,15 +419,12 @@ export class WritingView extends ItemView {
     add.style.cursor = "pointer";
     add.title = "Create a new beat at this level";
     add.addEventListener("click", async () => {
-      // Add a sibling at this level (use the parent)
       if (parentId === null) {
-        // Top-level: create top-level beat
         await this.createChildBeat();
-        // refocus to first top-level
         if (this.parsed?.beats[0]) this.focusPath = [this.parsed.beats[0].id];
         this.render();
       } else {
-        // Create sibling of parentId
+        // Create sibling of parentId at this level
         const siblings = this.parsed?.beats.filter((b) => parentBeatId(b.id) === parentId) ?? [];
         const newId = nextBeatId(siblings);
         if (!this.currentFile || !this.parsed) return;
@@ -430,7 +440,6 @@ export class WritingView extends ItemView {
       }
     });
 
-    // Cards
     if (beats.length === 0) {
       const empty = col.createDiv({ cls: "cb-column-empty" });
       empty.textContent = "No beats here yet.";
@@ -468,7 +477,9 @@ export class WritingView extends ItemView {
       }
     });
 
-    // Header (clickable to focus, draggable to reparent)
+    // === Header (just the title row — no click, no drag) ===
+    // The header is purely informational. All interaction happens via
+    // the content area (for editing) or the drag handle (for reparenting).
     const header = card.createDiv({ cls: "cb-card-header" });
     const status = this.settings.statuses.find((s) => s.key === beat.status);
     if (status) {
@@ -477,18 +488,31 @@ export class WritingView extends ItemView {
     }
     const idEl = header.createSpan({ cls: "cb-card-id", text: beat.id });
     if (status) idEl.style.color = status.color;
-    header.draggable = true;
-    header.addEventListener("dragstart", (e) => {
+
+    // Drag handle (the only place that drags, to avoid click conflict)
+    const dragHandle = header.createSpan({ text: "⋮⋮", cls: "cb-card-drag" });
+    dragHandle.draggable = true;
+    dragHandle.style.cursor = "grab";
+    dragHandle.addEventListener("dragstart", (e) => {
       e.dataTransfer?.setData("text/x-copy-blocks-beat", beat.id);
       if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
     });
-    header.addEventListener("click", () => this.focusCard(beat.id));
+    // Click the drag handle OR the id to focus the card (move focus down
+    // the tree — this is the "click to focus" affordance)
+    dragHandle.title = "Click to focus, drag to reparent";
+    idEl.style.cursor = "pointer";
+    idEl.title = "Click to focus, drag to reparent";
+    const focusHandler = () => this.focusCard(beat.id);
+    dragHandle.addEventListener("click", focusHandler);
+    idEl.addEventListener("click", focusHandler);
 
-    // Editable content area
+    // === Editable content area (the primary surface) ===
     const content = card.createDiv({ cls: "cb-card-content" });
     content.setAttribute("data-cb-beat-id", beat.id);
     content.contentEditable = "true";
     content.spellcheck = false;
+    // Show the title as the first bold line, not the whole content
+    // (so the user knows what to type into, instead of seeing a wall of text)
     content.textContent = beat.content;
     content.addEventListener("focus", () => {
       this.activeEditable = content;
@@ -505,36 +529,14 @@ export class WritingView extends ItemView {
     content.addEventListener("keydown", (e) => this.handleContentKeydown(e, beat.id));
   }
 
-  /**
-   * Keyboard shortcuts inside any card's content:
-   *   - Tab → create child, focus it
-   *   - Shift+Enter → create sibling, focus it
-   *   - Escape → blur (return to navigation mode)
-   */
   private async handleContentKeydown(e: KeyboardEvent, beatId: string): Promise<void> {
     if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
       await this.createChildBeat();
-      // Find the new beat (last in focusPath) and focus its content
-      setTimeout(() => {
-        const lastId = this.focusPath[this.focusPath.length - 1];
-        if (!lastId) return;
-        const next = this.contentEl.querySelector<HTMLElement>(
-          `.cb-card-content[data-cb-beat-id="${lastId}"]`
-        );
-        next?.focus();
-      }, 50);
+      // focusCardContent is called inside createChildBeat via setTimeout
     } else if (e.key === "Enter" && e.shiftKey) {
       e.preventDefault();
       await this.createSiblingBeat();
-      setTimeout(() => {
-        const lastId = this.focusPath[this.focusPath.length - 1];
-        if (!lastId) return;
-        const next = this.contentEl.querySelector<HTMLElement>(
-          `.cb-card-content[data-cb-beat-id="${lastId}"]`
-        );
-        next?.focus();
-      }, 50);
     } else if (e.key === "Escape") {
       (e.target as HTMLElement).blur();
     }
